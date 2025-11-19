@@ -182,7 +182,7 @@ int main()
     }
 
     // create a GLFW window
-    window = glfwCreateWindow(640, 640, "Hello OpenGL 7", NULL, NULL);
+    window = glfwCreateWindow(800, 800, "Hello OpenGL 6 GGX", NULL, NULL);
     glfwMakeContextCurrent(window);
 
     // register the key event callback function

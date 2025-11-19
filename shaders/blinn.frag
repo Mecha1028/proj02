@@ -32,10 +32,10 @@ void main()
     vec3 halfwayDir = normalize(lightDir + viewDir);
     
     // the shininess coefficient beta = 32.0 
-    float spec = pow(max(dot(norm, halfwayDir), 0.0), 32.0);
+    float spec = pow(max(dot(norm, halfwayDir), 0.0), 1000.0);
 
     // assuming a light source with a bright white colour
-    vec3 specular = vec3(0.3) * spec;
+    vec3 specular = vec3(1.0) * spec;
 
     // The final output fragment colour 
     // combination of ambient, diffuse and specular

@@ -94,7 +94,7 @@ void main()
     vec3 F0 = vec3(0.04); // non-metal base reflectivity
     float roughness = 0.1; 
     specular = BRDF_GGX(norm, viewDir, lightDir, F0, roughness);
-    
+
     // The final output fragment colour 
     // combination of ambient, diffuse and specular
     colour_out = vec4(ambient + diffuse + specular, 1.0);
