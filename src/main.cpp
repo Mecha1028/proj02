@@ -54,6 +54,10 @@ void initRenderToDepthTexture()
 {
     //GLfloat border[] = {1.0f, 0.0f,0.0f,0.0f };
     
+    // Assign the depth buffer texture to texture channel 1
+    glActiveTexture(GL_TEXTURE1);
+    //glBindTexture(GL_TEXTURE_2D, depthTex);
+
     // Generate the depth texture ID
     glGenTextures(1, &depthTex);
     glBindTexture(GL_TEXTURE_2D, depthTex);
@@ -73,9 +77,6 @@ void initRenderToDepthTexture()
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
 
-    // Assign the depth buffer texture to texture channel 1
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, depthTex);
 
     // Render to Texture
     // Create and set up the FBO
