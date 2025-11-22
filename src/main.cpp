@@ -18,7 +18,7 @@ glm::mat4 matModelRoot = glm::mat4(1.0);
 glm::mat4 matView = glm::mat4(1.0);
 glm::mat4 matProj = glm::ortho(-2.0f,2.0f,-2.0f,2.0f, -2.0f,2.0f);
 
-glm::vec3 lightPos = glm::vec3(5.0f, 5.0f, 10.0f);
+glm::vec3 lightPos = glm::vec3(-5.0f, 5.0f, -5.0f);
 //glm::vec3 viewPos = glm::vec3(0.0f, 0.0f, 5.0f);
 glm::vec3 viewPos = glm::vec3(0.0f, 0.0f, 5.0f);
 
@@ -233,15 +233,15 @@ int main()
     //----------------------------------------------------
     // Meshes
     std::shared_ptr<Mesh> cube = std::make_shared<Mesh>();
-    cube->init("models/cube.obj", blinnggxShader);
+    cube->init("models/cube.obj", blinnShader);
 
 
     std::shared_ptr<Mesh> teapot = std::make_shared<Mesh>();
-    teapot->init("models/teapot.obj", blinnggxShader);
+    teapot->init("models/teapot.obj", blinnShader);
 
 
     std::shared_ptr<Mesh> bunny = std::make_shared<Mesh>();
-    bunny->init("models/bunny_normal.obj", texggxShader);
+    bunny->init("models/bunny_normal.obj", texblinnShader);
 
     
     //----------------------------------------------------
