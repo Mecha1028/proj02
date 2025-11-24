@@ -24,7 +24,7 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     // LabA09 ShadowMap TODO:
     // calculate the normalised coordinate of the projected fragment in light space
     // and convert the coordinate from [-1, 1] to [0, 1]
-
+    vec3 projCoords = /* TODO */;
     
     // LabA09 ShadowMap TODO:
     // use x and y of the converted coorindate to read closeDepth from the depth map
