@@ -30,15 +30,15 @@ GLuint texblinnShader;
 
 // ========================================
 // for LabA08 Shadow Mapping
-int shadowMapWidth = 1000;
-int shadowMapHeight = 1000;
+int shadowMapWidth = 1024;
+int shadowMapHeight = 1024;
 
 // Window Viewport Size. for demo purpose we set shadow size equal to window size
 // should be in a higher resolution
 int width = shadowMapWidth;
 int height = shadowMapHeight;
-//int width = 800;
-//int height = 800;
+// int width = 800;
+// int height = 800;
 
 GLuint depthTex;  // depth texture ID
 GLuint shadowFBO; // shadow frame buffer ID
