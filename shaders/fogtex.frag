@@ -22,7 +22,9 @@ out vec4 colour_out;
 
 void main()
 {
-    vec3 colour = texture(textureMap, texCoord).rgb;
+    //vec3 colour = texture(textureMap, texCoord).rgb;
+
+    vec3 colour = vec3(1.0, 0.0, 0.0);
 
     // 1. ambient
     vec3 ambient = 0.05 * colour;
@@ -47,6 +49,6 @@ void main()
     // combination of ambient, diffuse and specular
     colour_out = vec4(ambient + diffuse + specular, 1.0);
 
-    float rate = exp(viewSpacePos.z/50);
-    colour_out = colour_out * rate + (1 - rate) * vec4(0.0, 0.0, 1.0, 1.0);
+    float fog_rate = exp(viewSpacePos.z/100);
+    colour_out = colour_out * fog_rate + (1 - fog_rate) * vec4(1.0, 1.0, 1.0, 1.0);
 }

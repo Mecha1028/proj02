@@ -202,13 +202,13 @@ int main()
 
     // set the eye at (0, 0, 5), looking at the centre of the world
     // try to change the eye position
-    viewPos = glm::vec3(0.0f, 2.0f, 5.0f);
-    matView = glm::lookAt(viewPos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0)); 
+    viewPos = glm::vec3(0.0f, 3.0f, 5.0f);
+    matView = glm::lookAt(viewPos, glm::vec3(0, 0, -10), glm::vec3(0, 1, 0)); 
 
     // set the Y field of view angle to 60 degrees, width/height ratio to 1.0, and a near plane of 3.5, far plane of 6.5
     // try to play with the FoV
     //matProj = glm::perspective(glm::radians(60.0f), 1.0f, 2.0f, 8.0f);
-    matProj = glm::perspective(glm::radians(60.0f), 1.0f, 2.0f, 100.0f);
+    matProj = glm::perspective(glm::radians(30.0f), 1.0f, 2.0f, 110.0f);
 
     //----------------------------------------------------
     // Meshes
@@ -236,7 +236,10 @@ int main()
     teapotNode->addMesh(teapot);
     for (int i = 0; i < 200; i++)
         cubeNode->addMesh(cube, glm::translate(glm::vec3(0.f, 0.f, - i * 0.5f)), glm::mat4(1.0), glm::scale(glm::vec3(1.0f, 1.0f, 0.1f)));
-    //bunnyNode->addMesh(bunny, glm::mat4(1.0), glm::mat4(1.0), glm::scale(glm::vec3(0.005f, 0.005f, 0.005f)));
+    
+    cubeNode->addMesh(cube, glm::translate(glm::vec3(0.f, 0.f, - 100.f)), 
+            glm::mat4(1.0), glm::scale(glm::vec3(100.0f, 100.0f, 0.1f)));
+        //bunnyNode->addMesh(bunny, glm::mat4(1.0), glm::mat4(1.0), glm::scale(glm::vec3(0.005f, 0.005f, 0.005f)));
 
 
     //cubeNode->addChild(teapotNode, glm::translate(glm::vec3(-1.5f, 0.5f, 0.0f)));
