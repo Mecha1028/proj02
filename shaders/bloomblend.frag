@@ -22,9 +22,11 @@ void main()
     vec3 result = blendColour;
 
     // =============================================
-    // exposure tone mapping https://learnopengl.com/Advanced-Lighting/HDR
+    // exposure-based simple tone mapping 
+    // https://learnopengl.com/Advanced-Lighting/HDR
+
     const float gamma = 2.2;
-    float exposure = 1.0;
+    float exposure = 0.2;
     result = vec3(1.0) - exp(-result * exposure);
     // Gamma correction       
     result = pow(result, vec3(1.0 / gamma));
