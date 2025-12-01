@@ -76,6 +76,7 @@ void initRenderToTexture()
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                               GL_RENDERBUFFER, depthBuf);
 
+
     // Create an FBO for the bright-pass filter and blur
     glGenFramebuffers(1, &blurFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, blurFBO);
