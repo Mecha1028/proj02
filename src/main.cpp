@@ -82,8 +82,8 @@ void initRenderToTexture()
 
     // the bloom buffer should use a lower resolution to better support blurring 
     // such as width/4 and height/4 or more
-    bloomBufWidth = width / 4;
-    bloomBufHeight = height / 4;
+    bloomBufWidth = width/4;
+    bloomBufHeight = height/4;
 
     // Create two texture objects to ping-pong blur 
     glGenTextures(2, blurtex);
@@ -444,12 +444,13 @@ int main()
         // Step 2
         filter();
 
+        
         // Step 3
         for (int i = 0; i < 50; i++)
         {
             blur(i);
         }
-
+        
         // Step 4
         blend();
         
