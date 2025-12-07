@@ -15,19 +15,32 @@ public:
     };
 
     std::shared_ptr<Node> root = nullptr;
-    const std::vector<Triangle> *source;
     int maxDepth = 8;
-    int maxPerNode = 8;
+    int maxPerNode = 16;
 
     std::shared_ptr<Node> CreateNode(const AABB &box)
     {
-        std::shared_ptr<Node> n = std::make_shared<Node>( Node());
+        std::shared_ptr<Node> n = std::make_shared<Node>();
         n->box = box;
         return n;
     }
 
+    void Build(const std::vector<Vertex>& vList, const std::vector<unsigned int>& tIdxList, glm::mat4 mat)
+    {
+        Spatial::Build(vList, tIdxList, mat);
+
+        root = CreateNode(bbox);
+
+        InsertTriangles();
+    }
+
+    void Insert(int triIdx) override {
+        InsertTri(root, triIdx, 0);
+    }
+
     void Subdivide(std::shared_ptr<Node> n)
     {
+        // center
         glm::vec3 c = (n->box.min + n->box.max) * 0.5f;
         glm::vec3 minB = n->box.min;
         glm::vec3 maxB = n->box.max;
@@ -38,6 +51,7 @@ public:
                 (i & 1) ? c.x : minB.x,
                 (i & 2) ? c.y : minB.y,
                 (i & 4) ? c.z : minB.z};
+
             glm::vec3 pMax = {
                 (i & 1) ? maxB.x : c.x,
                 (i & 2) ? maxB.y : c.y,
@@ -54,12 +68,11 @@ public:
             return;
         }
 
-        const Triangle &t = (*source)[triIndex];
+        Triangle t = getTriangle(triIndex);
         glm::vec3 triMin = glm::min(t.v0, glm::min(t.v1, t.v2));
         glm::vec3 triMax = glm::max(t.v0, glm::max(t.v1, t.v2));
 
-        if (n->tris.size() < maxPerNode && depth == 0)
-        {
+        if (n->tris.size() < maxPerNode) {
             n->tris.push_back(triIndex);
             return;
         }
@@ -80,34 +93,23 @@ public:
     }
 
 
-    void Build(const std::vector<Vertex> & vList, const std::vector<unsigned int> & tIdxList, glm::mat4 mat)
-    {
-        Spatial::Build(vList, tIdxList, mat);
-
-        root = CreateNode(bbox);
-
-        InsertTriangles();
-    }
-
-    void Insert(int triIdx) override {
-        InsertTri(root, triIdx, 0);
-    }
-
-    bool RaycastNode(std::shared_ptr<Node> n, const Ray &ray, HitInfo &best) const
+    bool RaycastNode(std::shared_ptr<Node> n, const Ray &ray, HitInfo &best)
     {
         float t;
+
         if (!RayAABB(ray.origin, ray.dir, n->box.min, n->box.max, t))
             return false;
 
         bool hit = false;
 
-        for (int tri : n->tris)
+        for (int triIdx : n->tris)
         {
             float tt;
-            if (RayTriangle(ray, (*source)[tri], tt) && tt < best.t)
+            Triangle tri = getTriangle(triIdx);
+            if (RayTriangle(ray, tri, tt) && tt < best.t)
             {
                 best.t = tt;
-                best.triIndex = tri;
+                best.triIndex = triIdx;
                 hit = true;
             }
         }

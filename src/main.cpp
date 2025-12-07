@@ -20,7 +20,7 @@ glm::mat4 matView = glm::mat4(1.0);
 glm::mat4 matProj = glm::ortho(-2.0f,2.0f,-2.0f,2.0f, -2.0f,2.0f);
 
 glm::vec3 lightPos = glm::vec3(5.0f, 5.0f, 10.0f);
-glm::vec3 viewPos_default = glm::vec3(0.0f, 0.0f, 5.0f);
+glm::vec3 viewPos_default = glm::vec3(0.0f, 2.0f, 6.0f);
 glm::vec3 viewPos = viewPos_default;
 
 // We are using mesh list instead of scenegraph to demo our picking and collision detection
@@ -154,36 +154,38 @@ int main()
 
     // set the eye at (0, 0, 5), looking at the centre of the world
     // try to change the eye position
-    viewPos = glm::vec3(0.0f, 2.0f, 5.0f);
+    //viewPos = glm::vec3(0.0f, 2.0f, 5.0f);
     matView = glm::lookAt(viewPos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0)); 
 
     // set the Y field of view angle to 60 degrees, width/height ratio to 1.0, and a near plane of 3.5, far plane of 6.5
     // try to play with the FoV
     //matProj = glm::perspective(glm::radians(60.0f), 1.0f, 2.0f, 8.0f);
-    matProj = glm::perspective(glm::radians(60.0f), 1.0f, 2.0f, 8.0f);
+    // setting to a close near plane and a farway far plane to test collision detection
+    matProj = glm::perspective(glm::radians(60.0f), 1.0f, 0.5f, 20.0f);
 
     //----------------------------------------------------
     // Meshes
     std::shared_ptr<Mesh> cube = std::make_shared<Mesh>();
     cube->init("models/cube.obj", blinnShader);
 
+    glm::mat4 mat = glm::mat4(1.0);
 
+    
     std::shared_ptr<Mesh> teapot = std::make_shared<Mesh>();
     teapot->init("models/teapot.obj", texblinnShader);
     meshList.push_back(teapot);
-    glm::mat4 mat = glm::translate(glm::vec3(-1.5f, 0.5f, 0.0f));
+    mat = glm::translate(glm::vec3(-2.0f, 1.0f, 0.0f));
     meshMatList.push_back(mat); // TRS
-    teapot->initSpatial(false, mat);
-
+    teapot->initSpatial(true, mat);
     
     std::shared_ptr<Mesh> bunny = std::make_shared<Mesh>();
     bunny->init("models/bunny_normal.obj", texblinnShader);
     meshList.push_back(bunny);
-    mat = glm::translate(glm::vec3(1.0f, 1.5f, 0.0f)) *
+    mat = glm::translate(glm::vec3(1.5f, 1.5f, 0.0f)) *
           glm::scale(glm::vec3(0.005f, 0.005f, 0.005f));
     meshMatList.push_back( mat ); // TRS
-    bunny->initSpatial(false, mat);
-
+    bunny->initSpatial(true, mat);
+  
 
     //----------------------------------------------------
     // Nodes
@@ -268,58 +270,6 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
         }
         */
 
-        // camera control
-        if (GLFW_KEY_LEFT == key) {
-            // pan left, rotate around Y, CCW
-            mat = glm::rotate(glm::radians(-angleStep), glm::vec3(0.0, 1.0, 0.0));
-        } else if (GLFW_KEY_RIGHT == key) {
-            // pan right, rotate around Y, CW
-            mat = glm::rotate(glm::radians(angleStep), glm::vec3(0.0, 1.0, 0.0));
-            
-        } else if (GLFW_KEY_UP == key) {
-            // tilt up, rotate around X, CCW
-            mat = glm::rotate(glm::radians(-angleStep), glm::vec3(1.0, 0.0, 0.0));
-        } else if (GLFW_KEY_DOWN == key) {
-            // tilt down, rotate around X, CW
-            mat = glm::rotate(glm::radians(angleStep), glm::vec3(1.0, 0.0, 0.0));
-        } else if ((GLFW_KEY_KP_ADD == key) ||
-                 (GLFW_KEY_EQUAL == key) && (mods & GLFW_MOD_SHIFT)) {
-            // zoom in, move along -Z
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
-        } else if ((GLFW_KEY_KP_SUBTRACT == key) || (GLFW_KEY_MINUS == key)) {
-            // zoom out, move along -Z
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep));
-        } 
-        // translation along camera axis (first person view)
-        else if (GLFW_KEY_A == key) {
-            //  move left along -X
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(transStep, 0.0f, 0.0f));
-        } else if (GLFW_KEY_D == key) {
-            // move right along X
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(-transStep, 0.0f, 0.0f));
-        } else if (GLFW_KEY_W == key) {
-            // move forward along -Z
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
-        } else if (GLFW_KEY_S == key) {
-            // move backward along Z
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep));
-        }
-        // translation along world axis
-        else if (GLFW_KEY_H == key) {
-            //  move left along -X
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(transStep, 0.0f, 0.0f));
-        } else if (GLFW_KEY_L == key) {
-            // move right along X
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(-transStep, 0.0f, 0.0f));
-        } else if (GLFW_KEY_J == key) {
-            // move forward along Z
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep));
-        }
-        else if (GLFW_KEY_K == key) {
-            // move backward along -Z
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
-        }
-
         if (GLFW_KEY_R == key)
         {
             // std::cout << "R pressed" << std::endl;
@@ -327,9 +277,123 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
             viewPos = viewPos_default;
             matView = glm::lookAt(viewPos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
             matModelRoot = glm::mat4(1.0f);
-        } else {
-            matView = mat * matView;
-            viewPos = glm::vec3(mat * glm::vec4(viewPos, 1.0f));
+
+            return;
+        } 
+
+        glm::mat4 nextMatView = matView;
+        glm::vec3 nextViewPos = viewPos;
+
+        // camera control
+        if (mods & GLFW_MOD_CONTROL) {
+            if (GLFW_KEY_LEFT == key) {
+                // pan left, rotate around Y, CCW
+                mat = glm::rotate(glm::radians(-angleStep), glm::vec3(0.0, 1.0, 0.0));
+                nextMatView = mat * matView;
+            }
+            else if (GLFW_KEY_RIGHT == key) {
+                // pan right, rotate around Y, CW
+                mat = glm::rotate(glm::radians(angleStep), glm::vec3(0.0, 1.0, 0.0));
+                nextMatView = mat * matView;
+            }
+            else if (GLFW_KEY_UP == key) {
+                // tilt up, rotate around X, CCW
+                mat = glm::rotate(glm::radians(-angleStep), glm::vec3(1.0, 0.0, 0.0));
+                nextMatView = mat * matView;
+            }
+            else if (GLFW_KEY_DOWN == key) {
+                // tilt down, rotate around X, CW
+                mat = glm::rotate(glm::radians(angleStep), glm::vec3(1.0, 0.0, 0.0));
+                nextMatView = mat * matView;
+            }
+            else if ((GLFW_KEY_KP_ADD == key) ||
+                (GLFW_KEY_EQUAL == key) && (mods & GLFW_MOD_SHIFT)) {
+                // zoom in, move along -Z
+                mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
+                nextMatView = mat * matView;
+            }
+            else if ((GLFW_KEY_KP_SUBTRACT == key) || (GLFW_KEY_MINUS == key)) {
+                // zoom out, move along -Z
+                mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep));
+                nextMatView = mat * matView;
+            }
+        }
+
+        // translation along camera axis (first person view)
+        if (GLFW_KEY_A == key) {
+            //  move left along -X
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(transStep, 0.0f, 0.0f));
+            nextMatView = mat * matView;
+        } else if (GLFW_KEY_D == key) {
+            // move right along X
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(-transStep, 0.0f, 0.0f));
+            nextMatView = mat * matView;
+        } else if (GLFW_KEY_W == key) {
+            // move forward along -Z
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
+            nextMatView = mat * matView;
+        } else if (GLFW_KEY_S == key) {
+            // move backward along Z
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep)); 
+            nextMatView = mat * matView;
+        }
+
+
+        // translation along world axis
+        if (GLFW_KEY_LEFT == key) {
+            //  move left along -X
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(transStep, 0.0f, 0.0f));
+            nextMatView = matView * mat;
+            nextViewPos.x -= transStep;
+        } else if (GLFW_KEY_RIGHT == key) {
+            // move right along X
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(-transStep, 0.0f, 0.0f));
+            nextMatView = matView * mat;
+            nextViewPos.x += transStep;
+        } else if (GLFW_KEY_UP == key) {
+            // move up along Y
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -transStep, 0.0f));
+            nextMatView = matView * mat;
+            nextViewPos.y += transStep;
+        } else if (GLFW_KEY_DOWN == key) {
+            // move down along -Y
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, transStep, 0.0f));
+            nextMatView = matView * mat;
+            nextViewPos.y -= transStep;
+        } else  if ((GLFW_KEY_KP_SUBTRACT == key) || (GLFW_KEY_MINUS == key))  {
+            // move backward along +Z
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep));
+            nextMatView = matView * mat;
+            nextViewPos.z += transStep;
+        } else if ((GLFW_KEY_KP_ADD == key) ||
+            (GLFW_KEY_EQUAL == key) && (mods & GLFW_MOD_SHIFT))  {
+            // move forward along -Z
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
+            nextMatView = matView * mat;
+            nextViewPos.z -= transStep;
+        }
+
+
+        // check collision detection
+        AABB mybox{ nextViewPos - 0.2f, nextViewPos + 0.2f };
+        std::vector<int> out;
+
+        bool bCollide = false;
+        for (std::shared_ptr<Mesh> pMesh : meshList)
+        {
+            pMesh->pSpatial->QueryAABB(mybox, out);
+            
+            if (out.empty()) {
+                std::cout << "No collision" << std::endl;
+            } else {
+                bCollide = true;
+                std::cout << "Collision detected: " << out.size() << std::endl;
+            }
+        }
+
+        if (!bCollide) {
+            matView = nextMatView;
+            viewPos = nextViewPos;
         }
     }
 }

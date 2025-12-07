@@ -78,10 +78,8 @@ public:
                cell.x < dims.x && cell.y < dims.y && cell.z < dims.z)
         {
             int idx = cell.x + dims.x * (cell.y + dims.y * cell.z);
-            for (int triIdx : cells[idx])
-            {
+            for (int triIdx : cells[idx]) {
                 float t;
-
                 Triangle tri = Spatial::getTriangle(triIdx);
 
                 if (RayTriangle(ray, tri, t)) {
@@ -96,18 +94,15 @@ public:
                 if (next.x < next.z) {
                     cell.x += (int)step.x;
                     next.x += tDelta.x;
-                }
-                else {
+                } else {
                     cell.z += (int)step.z;
                     next.z += tDelta.z;
                 }
-            }
-            else {
+            } else {
                 if (next.y < next.z) {
                     cell.y += (int)step.y;
                     next.y += tDelta.y;
-                }
-                else {
+                } else {
                     cell.z += (int)step.z;
                     next.z += tDelta.z;
                 }
@@ -123,6 +118,9 @@ public:
 
     void QueryAABB(const AABB &box, std::vector<int> &out) const override
     {
+        if (!AABBIntersects(box, bbox))
+            return;
+
         glm::ivec3 minC = PosToCell(box.min);
         glm::ivec3 maxC = PosToCell(box.max);
         for (int z = minC.z; z <= maxC.z; z++)

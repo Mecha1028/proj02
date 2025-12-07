@@ -51,13 +51,11 @@ public:
     Spatial()  { }
     virtual ~Spatial() {}
 
-
     virtual void Build(const std::vector<Vertex> & vList, const std::vector<unsigned int> & tIdxList, glm::mat4 mat);    
     void ComputeBounds(AABB &out);
     void InsertTriangles();
     Triangle & getTriangle(int triIdx);
 
-    
     virtual void Insert(int triIdx) = 0;
     virtual bool Raycast(const Ray &ray, HitInfo &outHit)  = 0;
     virtual void QueryAABB(const AABB &box, std::vector<int> &results) const = 0;
@@ -68,5 +66,17 @@ bool RayAABB(const glm::vec3 &orig, const glm::vec3 &dir,
 
 bool RayTriangle(const Ray &ray, const Triangle &tri, float &t);
 
+inline bool AABBIntersects(const AABB& a, const AABB& b)
+{
+    // If one box is on left side of the other
+    if (a.max.x < b.min.x || a.min.x > b.max.x) return false;
 
+    // If one box is in front / behind the other
+    if (a.max.y < b.min.y || a.min.y > b.max.y) return false;
+
+    // If one box is above / below the other
+    if (a.max.z < b.min.z || a.min.z > b.max.z) return false;
+
+    return true;
+}
 #endif
