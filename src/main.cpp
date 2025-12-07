@@ -10,7 +10,8 @@
 
 #include "shader.h"
 #include "Mesh.h"
-#include "Node.h"
+//#include "Node.h"
+
 
 static Shader shader;
 
@@ -19,8 +20,12 @@ glm::mat4 matView = glm::mat4(1.0);
 glm::mat4 matProj = glm::ortho(-2.0f,2.0f,-2.0f,2.0f, -2.0f,2.0f);
 
 glm::vec3 lightPos = glm::vec3(5.0f, 5.0f, 10.0f);
-//glm::vec3 viewPos = glm::vec3(0.0f, 0.0f, 5.0f);
-glm::vec3 viewPos = glm::vec3(0.0f, 0.0f, 5.0f);
+glm::vec3 viewPos_default = glm::vec3(0.0f, 0.0f, 5.0f);
+glm::vec3 viewPos = viewPos_default;
+
+// We are using mesh list instead of scenegraph to demo our picking and collision detection
+std::vector< std::shared_ptr <Mesh> > meshList;
+std::vector< glm::mat4 > meshMatList;
 
 // GLuint flatShader;
 GLuint blinnShader;
@@ -51,110 +56,61 @@ void setViewPosition(glm::vec3 eyePos)
     glUniform3fv(viewpos_loc, 1, glm::value_ptr(eyePos));
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+
+glm::vec3 screenPosToRay(int mouseX, int mouseY, int w, int h,
+                         const glm::mat4 &proj, const glm::mat4 &view);
+
+void mouse_button_callback(GLFWwindow *win, int button, int action, int mods);
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
+
+
+glm::vec3 screenPosToRay(int mouseX, int mouseY, int w, int h,
+                         const glm::mat4 &proj, const glm::mat4 &view)
 {
-    glm::mat4 mat = glm::mat4(1.0);
+    float x = (2.0f * mouseX) / w - 1.0f;
+    float y = 1.0f - (2.0f * mouseY) / h;
+    glm::vec4 ray_clip(x, y, -1.0f, 1.0f);
 
-    float angleStep = 5.0f;
-    float transStep = 1.0f;
+    glm::vec4 ray_eye = glm::inverse(proj) * ray_clip;
+    ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0f, 0.0f);
 
-    if (action == GLFW_PRESS) {
+    glm::vec3 ray_world = glm::normalize(glm::vec3(glm::inverse(view) * ray_eye));
+    return ray_world;
+}
 
-        if (mods & GLFW_MOD_CONTROL) {
+void mouse_button_callback(GLFWwindow *win, int button, int action, int mods)
+{
+    
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
+        double mx, my;
+        glfwGetCursorPos(win, &mx, &my);
 
-            // translation in world space
-            if (GLFW_KEY_LEFT == key) {
-                mat = glm::translate(glm::mat4(1.0f), glm::vec3(transStep, 0.0f, 0.0f));
-                matModelRoot = mat * matModelRoot;
-            } else if (GLFW_KEY_RIGHT == key ) {
-                mat = glm::translate(glm::mat4(1.0f), glm::vec3(-transStep, 0.0f, 0.0f));
-                matModelRoot = mat * matModelRoot;
-            } else if (GLFW_KEY_UP == key) {
-                mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, transStep, 0.0f));
-                matModelRoot = mat * matModelRoot;
-            } if (GLFW_KEY_DOWN == key) {
-                mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -transStep, 0.0f));
-                matModelRoot = mat * matModelRoot;
+        std::cout << "Mouse click at: (" << mx <<", " << my << ")" << std::endl;
+
+        int w, h;
+        glfwGetWindowSize(win, &w, &h);
+
+        glm::vec3 rayOrig = viewPos;
+        glm::vec3 rayDir = screenPosToRay((int)mx, (int)my, w, h, matProj, matView);
+
+        Ray ray{rayOrig, rayDir};
+
+        
+        for (std::shared_ptr<Mesh> pMesh : meshList)
+        {
+            HitInfo hit;
+            if (pMesh->pSpatial->Raycast(ray, hit)) {
+                std::cout << "Picked triangle index: " << hit.triIndex << ", t=" << hit.t << std::endl;
+                pMesh->setPicked(true);
+            } else {
+                pMesh->setPicked(false);
+                std::cout << "No objects picked" << std::endl;
             }
         }
-
-        // camera control
-        if (GLFW_KEY_LEFT == key) {
-            // pan left, rotate around Y, CCW
-            mat = glm::rotate(glm::radians(-angleStep), glm::vec3(0.0, 1.0, 0.0));
-            matView = mat * matView;
-        } else if (GLFW_KEY_RIGHT == key ) {
-            // pan right, rotate around Y, CW
-            mat = glm::rotate(glm::radians(angleStep), glm::vec3(0.0, 1.0, 0.0));
-            matView = mat * matView;
-        } else if (GLFW_KEY_UP == key) {
-            // tilt up, rotate around X, CCW
-            mat = glm::rotate(glm::radians(-angleStep), glm::vec3(1.0, 0.0, 0.0));
-            matView = mat * matView;
-        } if (GLFW_KEY_DOWN == key) {
-            // tilt down, rotate around X, CW
-            mat = glm::rotate(glm::radians(angleStep), glm::vec3(1.0, 0.0, 0.0));
-            matView = mat * matView;
-        } else if ( (GLFW_KEY_KP_ADD == key) || 
-            (GLFW_KEY_EQUAL == key) && (mods & GLFW_MOD_SHIFT) ) {
-            // std::cout << "+ pressed" << std::endl;
-            // zoom in, move along -Z
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
-            matView = mat * matView ;
-        } else if ( (GLFW_KEY_KP_SUBTRACT == key ) || (GLFW_KEY_MINUS == key) ) {
-            // std::cout << "keypad - pressed" << std::endl;
-            // zoom out, move along -Z
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep));
-            matView = mat * matView;
-        } else if (GLFW_KEY_R == key) {
-            //std::cout << "R pressed" << std::endl;
-            // reset
-            matView = glm::lookAt(glm::vec3(0, 0, 5), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0)); 
-            matModelRoot = glm::mat4(1.0f);
-        }
-
-        // translation along camera axis (first person view)
-        else if (GLFW_KEY_A == key ) {
-            //if (modes & GLFW_MOD_CONTROL)
-            // move left along -X
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(transStep, 0.0f, 0.0f));
-            matView = mat * matView;
-        } else if (GLFW_KEY_D == key) {
-            // move right along X
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(-transStep, 0.0f, 0.0f));
-            matView = mat * matView;
-        } if (GLFW_KEY_W == key ) {
-            // move forward along -Z
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
-            matView = mat * matView;
-        } else if (GLFW_KEY_S == key) {
-            // move backward along Z
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep));
-            matView = mat * matView;
-        } 
-
-        // translation along world axis
-        else if (GLFW_KEY_H == key ) {
-            //if (modes & GLFW_MOD_CONTROL)
-            // move left along -X
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(transStep, 0.0f, 0.0f));
-            matView = matView * mat;
-        } else if (GLFW_KEY_L == key) {
-            // move right along X
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(-transStep, 0.0f, 0.0f));
-            matView = matView * mat;
-        } if (GLFW_KEY_J == key ) {
-            // move forward along Z
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep));
-            matView = matView * mat;
-        } else if (GLFW_KEY_K == key) {
-            // move backward along -Z
-            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
-            matView = matView * mat;
-        } 
     }
-    
 }
+
 
 int main()
 {
@@ -168,12 +124,14 @@ int main()
     }
 
     // create a GLFW window
-    window = glfwCreateWindow(640, 640, "Hello OpenGL 7", NULL, NULL);
+    window = glfwCreateWindow(640, 640, "Hello OpenGL 11", NULL, NULL);
     glfwMakeContextCurrent(window);
 
     // register the key event callback function
     glfwSetKeyCallback(window, key_callback);
-
+    
+    // register the mouse button event callback function
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     // loading glad
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -183,7 +141,6 @@ int main()
         return -1;
     }
 
- 
     phongShader = initShader( "shaders/blinn.vert", "shaders/phong.frag");
     setLightPosition(lightPos);
     setViewPosition(viewPos);
@@ -212,34 +169,43 @@ int main()
 
 
     std::shared_ptr<Mesh> teapot = std::make_shared<Mesh>();
-    teapot->init("models/teapot.obj", blinnShader);
-
-
-    std::shared_ptr<Mesh> bunny = std::make_shared<Mesh>();
-    bunny->init("models/bunny_normal.obj", texblinnShader);
+    teapot->init("models/teapot.obj", texblinnShader);
+    meshList.push_back(teapot);
+    glm::mat4 mat = glm::translate(glm::vec3(-1.5f, 0.5f, 0.0f));
+    meshMatList.push_back(mat); // TRS
+    teapot->initSpatial(false, mat);
 
     
+    std::shared_ptr<Mesh> bunny = std::make_shared<Mesh>();
+    bunny->init("models/bunny_normal.obj", texblinnShader);
+    meshList.push_back(bunny);
+    mat = glm::translate(glm::vec3(1.0f, 1.5f, 0.0f)) *
+          glm::scale(glm::vec3(0.005f, 0.005f, 0.005f));
+    meshMatList.push_back( mat ); // TRS
+    bunny->initSpatial(false, mat);
+
+
     //----------------------------------------------------
     // Nodes
-    std::shared_ptr<Node> scene = std::make_shared<Node>();
-    std::shared_ptr<Node> teapotNode = std::make_shared<Node>();
-    std::shared_ptr<Node> cubeNode = std::make_shared<Node>();
-    std::shared_ptr<Node> bunnyNode = std::make_shared<Node>();
+    // std::shared_ptr<Node> scene = std::make_shared<Node>();
+    // std::shared_ptr<Node> teapotNode = std::make_shared<Node>();
+    // std::shared_ptr<Node> cubeNode = std::make_shared<Node>();
+    // std::shared_ptr<Node> bunnyNode = std::make_shared<Node>();
     
     //----------------------------------------------------
     // Build the tree
-    teapotNode->addMesh(teapot);
-    cubeNode->addMesh(cube, glm::mat4(1.0), glm::mat4(1.0), glm::scale(glm::vec3(2.0f, 0.25f, 1.5f)));
-    bunnyNode->addMesh(bunny, glm::mat4(1.0), glm::mat4(1.0), glm::scale(glm::vec3(0.005f, 0.005f, 0.005f)));
+    //teapotNode->addMesh(teapot);
+    //cubeNode->addMesh(cube, glm::mat4(1.0), glm::mat4(1.0), glm::scale(glm::vec3(2.0f, 0.25f, 1.5f)));
+    //bunnyNode->addMesh(bunny, glm::mat4(1.0), glm::mat4(1.0), glm::scale(glm::vec3(0.005f, 0.005f, 0.005f)));
 
 
-    cubeNode->addChild(teapotNode, glm::translate(glm::vec3(-1.5f, 0.5f, 0.0f)));
-    cubeNode->addChild(bunnyNode, glm::translate(glm::vec3(1.0f, 1.5f, 0.0f)));
+    // cubeNode->addChild(teapotNode, glm::translate(glm::vec3(-1.5f, 0.5f, 0.0f)));
+    // cubeNode->addChild(bunnyNode, glm::translate(glm::vec3(1.0f, 1.5f, 0.0f)));
     // cubeNode->addChild(teapotNode, glm::translate(glm::vec3(0.0f, 1.0f, 0.0f)), glm::rotate(glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
     
     //----------------------------------------------------
     // Add the tree to the world space
-    scene->addChild(cubeNode);
+    //scene->addChild(cubeNode);
     //scene->addChild(bunnyNode);
     // scene->addChild(cubeNode, glm::translate(glm::vec3(1.0f, 0.0f, 0.0f)), glm::rotate(glm::radians(45.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 
@@ -256,13 +222,114 @@ int main()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        scene->draw(matModelRoot, matView, matProj);
+        //scene->draw(matModelRoot, matView, matProj);
         // bunny->draw(glm::scale(glm::vec3(0.005f, 0.005f, 0.005f)), matView, matProj);
-        
+
+
+        for (int i = 0; i < meshList.size(); i++ ) {
+            std::shared_ptr<Mesh> pMesh = meshList[i];
+            pMesh->draw(matModelRoot * meshMatList[i], matView, matProj);
+        }
+
         glfwSwapBuffers(window);
     }
 
     glfwTerminate();
 
     return 0;
+}
+
+
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+    glm::mat4 mat = glm::mat4(1.0);
+
+    float angleStep = 5.0f;
+    float transStep = 1.0f;
+
+    if (action == GLFW_PRESS)
+    {
+        /*
+        // we don't allow objects to move for picking and collision detection
+        if (mods & GLFW_MOD_CONTROL) {
+            // translation in world space
+            if (GLFW_KEY_LEFT == key) {
+                mat = glm::translate(glm::mat4(1.0f), glm::vec3(transStep, 0.0f, 0.0f));
+                matModelRoot = mat * matModelRoot;
+            } else if (GLFW_KEY_RIGHT == key) {
+                mat = glm::translate(glm::mat4(1.0f), glm::vec3(-transStep, 0.0f, 0.0f));
+            } else if (GLFW_KEY_UP == key) {
+                mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, transStep, 0.0f));
+                matModelRoot = mat * matModelRoot;
+            } else if (GLFW_KEY_DOWN == key) {
+                mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -transStep, 0.0f));
+            }
+            matModelRoot = mat * matModelRoot;
+        }
+        */
+
+        // camera control
+        if (GLFW_KEY_LEFT == key) {
+            // pan left, rotate around Y, CCW
+            mat = glm::rotate(glm::radians(-angleStep), glm::vec3(0.0, 1.0, 0.0));
+        } else if (GLFW_KEY_RIGHT == key) {
+            // pan right, rotate around Y, CW
+            mat = glm::rotate(glm::radians(angleStep), glm::vec3(0.0, 1.0, 0.0));
+            
+        } else if (GLFW_KEY_UP == key) {
+            // tilt up, rotate around X, CCW
+            mat = glm::rotate(glm::radians(-angleStep), glm::vec3(1.0, 0.0, 0.0));
+        } else if (GLFW_KEY_DOWN == key) {
+            // tilt down, rotate around X, CW
+            mat = glm::rotate(glm::radians(angleStep), glm::vec3(1.0, 0.0, 0.0));
+        } else if ((GLFW_KEY_KP_ADD == key) ||
+                 (GLFW_KEY_EQUAL == key) && (mods & GLFW_MOD_SHIFT)) {
+            // zoom in, move along -Z
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
+        } else if ((GLFW_KEY_KP_SUBTRACT == key) || (GLFW_KEY_MINUS == key)) {
+            // zoom out, move along -Z
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep));
+        } 
+        // translation along camera axis (first person view)
+        else if (GLFW_KEY_A == key) {
+            //  move left along -X
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(transStep, 0.0f, 0.0f));
+        } else if (GLFW_KEY_D == key) {
+            // move right along X
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(-transStep, 0.0f, 0.0f));
+        } else if (GLFW_KEY_W == key) {
+            // move forward along -Z
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
+        } else if (GLFW_KEY_S == key) {
+            // move backward along Z
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep));
+        }
+        // translation along world axis
+        else if (GLFW_KEY_H == key) {
+            //  move left along -X
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(transStep, 0.0f, 0.0f));
+        } else if (GLFW_KEY_L == key) {
+            // move right along X
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(-transStep, 0.0f, 0.0f));
+        } else if (GLFW_KEY_J == key) {
+            // move forward along Z
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep));
+        }
+        else if (GLFW_KEY_K == key) {
+            // move backward along -Z
+            mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
+        }
+
+        if (GLFW_KEY_R == key)
+        {
+            // std::cout << "R pressed" << std::endl;
+            //  reset
+            viewPos = viewPos_default;
+            matView = glm::lookAt(viewPos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+            matModelRoot = glm::mat4(1.0f);
+        } else {
+            matView = mat * matView;
+            viewPos = glm::vec3(mat * glm::vec4(viewPos, 1.0f));
+        }
+    }
 }

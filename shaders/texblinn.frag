@@ -16,11 +16,17 @@ uniform sampler2D textureMap;
 // LabA08 
 //uniform sampler2D normalMap;
 
+// LabA11
+uniform bool bPicked = false;
+
 out vec4 colour_out;
 
 void main()
 {
     vec3 colour = texture(textureMap, texCoord).rgb;
+
+    if (bPicked)
+        colour = 0.6 * colour + 0.4 * vec3(1.0, 1.0, 0.0);
 
     // 1. ambient
     vec3 ambient = 0.05 * colour;

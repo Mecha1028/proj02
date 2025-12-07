@@ -1,5 +1,9 @@
+// =============================================================
+// NOTICE: For simplicity, we are not using SceneGraph in LabA11 
+
 #ifndef __NODE_H__
 #define __NODE_H__
+
 
 #include <vector>
 
@@ -9,6 +13,7 @@
 #include <glm/gtx/transform.hpp>
 
 #include "Mesh.h"
+
 
 class Node {
 private:

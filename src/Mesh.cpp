@@ -11,6 +11,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
+#include "Grid.h"
+#include "Octree.h"
 
 Mesh::Mesh()
 {
@@ -27,6 +29,16 @@ void Mesh::init(std::string path, GLuint id)
     shaderId = id;
     loadModel(path);
     initBuffer();
+}
+
+void Mesh::initSpatial(bool useOctree, glm::mat4 mat)
+{
+    if (useOctree)
+        pSpatial = std::make_unique<Octree>();
+    else
+        pSpatial = std::make_unique<Grid>(glm::ivec3(16));
+    
+    pSpatial->Build(vertices, indices, mat);
 }
 
 void Mesh::loadModel(std::string path) 
@@ -78,7 +90,7 @@ void Mesh::loadModel(std::string path)
                 v.texCoord = vec;
             }
             else {
-                std::cout << "tex coord zero" << std::endl;
+                //std::cout << "tex coord zero" << std::endl;
                 v.texCoord = glm::vec2(0.0f, 0.0f);
             }
             vertices.push_back(v);
@@ -290,7 +302,8 @@ void Mesh::draw(glm::mat4 matModel, glm::mat4 matView, glm::mat4 matProj)
     glUniform1i(textureLoc, 0); 
 
     // =====================================================
-
+    // LabA 11 Spatial Data Structures
+    glUniform1i(glGetUniformLocation(shaderId, "bPicked"), bPicked);
 
     // 3. Bind the corresponding model's VAO
     glBindVertexArray(buffers[0]);

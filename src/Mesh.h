@@ -15,12 +15,10 @@
 // ==============================================
 #include <assimp/material.h>
 
-// added in LabA07
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec3 normal;
-    glm::vec2 texCoord;
-};
+// added in LabA11
+#include "Spatial.h"
+
+
 
 // added in LabA07
 struct Texture {
@@ -60,6 +58,9 @@ protected:
     // this will be Material in the future
     GLuint shaderId;
 
+    // added in LabA 11
+    bool bPicked = false;
+    
     void initBuffer();
 
     // added in LabA07
@@ -69,13 +70,21 @@ protected:
     Material Mesh::loadMaterial(aiMaterial* mat);
 
 public:
+
+    std::unique_ptr<Spatial> pSpatial = nullptr;
+
     Mesh();
     ~Mesh();
 
     void init(std::string path, GLuint shaderId);
     void loadModel(std::string path);
 
+    void initSpatial(bool useOctree, glm::mat4 mat);
+
     void setShaderId(GLuint sid);
+
+    // added in LabA 11
+    void setPicked(bool b) { bPicked = b; }
     
     void draw(glm::mat4 matModel, glm::mat4 matView, glm::mat4 matProj);
 };

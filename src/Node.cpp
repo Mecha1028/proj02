@@ -1,3 +1,6 @@
+// =============================================================
+// NOTICE: For simplicity, we are not using SceneGraph in LabA11 
+
 #include "Node.h"
 
 void Node::addChild(std::shared_ptr<Node> child, glm::mat4 trans, glm::mat4 rot )
