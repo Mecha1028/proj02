@@ -102,8 +102,7 @@ public:
 
         bool hit = false;
 
-        for (int triIdx : n->tris)
-        {
+        for (int triIdx : n->tris)  {
             float tt;
             Triangle tri = getTriangle(triIdx);
             if (RayTriangle(ray, tri, tt) && tt < best.t)
@@ -138,6 +137,7 @@ public:
         if (n == nullptr)
             return;
 
+        // AABB no intersection
         if (n->box.max.x < box.min.x || n->box.min.x > box.max.x ||
             n->box.max.y < box.min.y || n->box.min.y > box.max.y ||
             n->box.max.z < box.min.z || n->box.min.z > box.max.z)

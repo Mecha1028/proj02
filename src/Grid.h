@@ -61,6 +61,7 @@ public:
         if (!RayAABB(ray.origin, ray.dir, bbox.min, bbox.max, tHit))
             return false;
 
+        // 3D DDA
         glm::vec3 p = ray.origin + ray.dir * std::max(0.0f, tHit);
         glm::ivec3 cell = PosToCell(p);
 
@@ -123,6 +124,7 @@ public:
 
         glm::ivec3 minC = PosToCell(box.min);
         glm::ivec3 maxC = PosToCell(box.max);
+
         for (int z = minC.z; z <= maxC.z; z++)
             for (int y = minC.y; y <= maxC.y; y++)
                 for (int x = minC.x; x <= maxC.x; x++)

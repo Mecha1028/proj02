@@ -69,11 +69,20 @@ glm::vec3 screenPosToRay(int mouseX, int mouseY, int w, int h,
 {
     float x = (2.0f * mouseX) / w - 1.0f;
     float y = 1.0f - (2.0f * mouseY) / h;
+
+    // clicked point on the near plane in NDC space
+    // if we assume the eye space is scaled so that z_{near} = -1.0
+    // then this NDC coordinate is the same as its clip coordinate
     glm::vec4 ray_clip(x, y, -1.0f, 1.0f);
 
+    // set one point with (x, y) and z = -1.0 in eye/camera space
+    // the camera is located at (0, 0, 0)
     glm::vec4 ray_eye = glm::inverse(proj) * ray_clip;
+
+    // ray direction in scaled eye space: z_{near} = -1.0
     ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0f, 0.0f);
 
+    // convert the vector to the word space
     glm::vec3 ray_world = glm::normalize(glm::vec3(glm::inverse(view) * ray_eye));
     return ray_world;
 }
@@ -124,7 +133,7 @@ int main()
     }
 
     // create a GLFW window
-    window = glfwCreateWindow(640, 640, "Hello OpenGL 11", NULL, NULL);
+    window = glfwCreateWindow(800, 800, "Hello OpenGL 11", NULL, NULL);
     glfwMakeContextCurrent(window);
 
     // register the key event callback function
