@@ -12,16 +12,18 @@
 #include "Mesh.h"
 //#include "Node.h"
 
+#include "ArcballCamera.h"
+
 
 static Shader shader;
 
 glm::mat4 matModelRoot = glm::mat4(1.0);
-glm::mat4 matView = glm::mat4(1.0);
-glm::mat4 matProj = glm::ortho(-2.0f,2.0f,-2.0f,2.0f, -2.0f,2.0f);
+// glm::mat4 matView = glm::mat4(1.0);
+// glm::mat4 matProj = glm::ortho(-2.0f,2.0f,-2.0f,2.0f, -2.0f,2.0f);
 
 glm::vec3 lightPos = glm::vec3(5.0f, 5.0f, 10.0f);
 glm::vec3 viewPos_default = glm::vec3(0.0f, 2.0f, 6.0f);
-glm::vec3 viewPos = viewPos_default;
+// glm::vec3 viewPos = viewPos_default;
 
 // We are using mesh list instead of scenegraph to demo our picking and collision detection
 std::vector< std::shared_ptr <Mesh> > meshList;
@@ -32,6 +34,17 @@ GLuint blinnShader;
 GLuint phongShader;
 // added for LabA07
 GLuint texblinnShader;
+
+// LabA 12 Interaction Arcball camera
+std::shared_ptr<ArcballCamera> camera;
+
+bool leftDown = false;
+bool middleDown = false;
+
+double lastX, lastY;
+
+int width = 800;
+int height = 800;
 
 // Initialize shader
 GLuint initShader(std::string pathVert, std::string pathFrag) 
@@ -89,19 +102,40 @@ glm::vec3 screenPosToRay(int mouseX, int mouseY, int w, int h,
 
 void mouse_button_callback(GLFWwindow *win, int button, int action, int mods)
 {
-    
+    //std::cout << "Mouse click at: (" << mx <<", " << my << ")" << std::endl;
+
+    double mx, my;
+    glfwGetCursorPos(win, &mx, &my);
+
+    int w, h;
+    glfwGetWindowSize(win, &w, &h);
+
+    // for arcball control
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (action == GLFW_PRESS) {
+            leftDown = true;
+            camera->MouseDown(mx / w, my / h);
+        } else {
+            leftDown = false;
+            camera->MouseUp();
+        }
+    }
+
+    lastX = mx;
+    lastY = my;
+
+    if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
+        if (action == GLFW_PRESS) {
+            middleDown = true;
+        } else {
+            middleDown = false;
+        }
+    }
+
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
     {
-        double mx, my;
-        glfwGetCursorPos(win, &mx, &my);
-
-        std::cout << "Mouse click at: (" << mx <<", " << my << ")" << std::endl;
-
-        int w, h;
-        glfwGetWindowSize(win, &w, &h);
-
-        glm::vec3 rayOrig = viewPos;
-        glm::vec3 rayDir = screenPosToRay((int)mx, (int)my, w, h, matProj, matView);
+        glm::vec3 rayOrig = camera->eye;
+        glm::vec3 rayDir = screenPosToRay((int)mx, (int)my, w, h, camera->matProj, camera->matView);
 
         Ray ray{rayOrig, rayDir};
 
@@ -114,12 +148,38 @@ void mouse_button_callback(GLFWwindow *win, int button, int action, int mods)
                 pMesh->setPicked(true);
             } else {
                 pMesh->setPicked(false);
-                std::cout << "No objects picked" << std::endl;
+                //std::cout << "No objects picked" << std::endl;
             }
         }
     }
 }
 
+void CursorPosCallback(GLFWwindow* window, double x, double y)
+{
+    //std::cout << "Cursor Pos Callback" << std::endl;
+
+    double nx = x / width;
+    double ny = y / height;
+
+    if (leftDown) {
+        camera->MouseMove(nx, ny);
+    }
+
+    if (middleDown) {
+        float dx = float(x - lastX);
+        float dy = float(y - lastY);
+        camera->Pan(dx, dy);
+    }
+
+    lastX = x;
+    lastY = y;
+}
+
+
+void ScrollCallback(GLFWwindow* window, double xoff, double yoff)
+{
+    camera->Zoom((float)yoff);
+}
 
 int main()
 {
@@ -133,14 +193,27 @@ int main()
     }
 
     // create a GLFW window
-    window = glfwCreateWindow(800, 800, "Hello OpenGL 11", NULL, NULL);
+    window = glfwCreateWindow(width, height, "Hello OpenGL 11", NULL, NULL);
     glfwMakeContextCurrent(window);
+
+
+    camera = std::make_shared<ArcballCamera>(
+        viewPos_default,
+        glm::vec3(0,0,0), // target
+        5.0f,             // distance
+        60.0f,            // FOV
+        float(width) / float(height),
+        0.5f,
+        20.0f
+    );
 
     // register the key event callback function
     glfwSetKeyCallback(window, key_callback);
     
     // register the mouse button event callback function
     glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, CursorPosCallback);
+    glfwSetScrollCallback(window, ScrollCallback);
 
     // loading glad
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -152,25 +225,28 @@ int main()
 
     phongShader = initShader( "shaders/blinn.vert", "shaders/phong.frag");
     setLightPosition(lightPos);
-    setViewPosition(viewPos);
+    setViewPosition(camera->eye);
     blinnShader = initShader( "shaders/blinn.vert", "shaders/blinn.frag");
     setLightPosition(lightPos);
-    setViewPosition(viewPos);
+    setViewPosition(camera->eye);
     // added for LabA07
     texblinnShader = initShader("shaders/texblinn.vert", "shaders/texblinn.frag");
     setLightPosition(lightPos);
-    setViewPosition(viewPos);
+    setViewPosition(camera->eye);
 
     // set the eye at (0, 0, 5), looking at the centre of the world
     // try to change the eye position
     //viewPos = glm::vec3(0.0f, 2.0f, 5.0f);
-    matView = glm::lookAt(viewPos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0)); 
+    // matView = glm::lookAt(viewPos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0)); 
 
     // set the Y field of view angle to 60 degrees, width/height ratio to 1.0, and a near plane of 3.5, far plane of 6.5
     // try to play with the FoV
     //matProj = glm::perspective(glm::radians(60.0f), 1.0f, 2.0f, 8.0f);
     // setting to a close near plane and a farway far plane to test collision detection
-    matProj = glm::perspective(glm::radians(60.0f), 1.0f, 0.5f, 20.0f);
+    // matProj = glm::perspective(glm::radians(60.0f), 1.0f, 0.5f, 20.0f);
+
+    // matView = camera->matView;
+    // matProj = camera->matProj;
 
     //----------------------------------------------------
     // Meshes
@@ -239,7 +315,7 @@ int main()
 
         for (int i = 0; i < meshList.size(); i++ ) {
             std::shared_ptr<Mesh> pMesh = meshList[i];
-            pMesh->draw(matModelRoot * meshMatList[i], matView, matProj);
+            pMesh->draw(matModelRoot * meshMatList[i], camera->matView, camera->matProj);
         }
 
         glfwSwapBuffers(window);
@@ -283,48 +359,50 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
         {
             // std::cout << "R pressed" << std::endl;
             //  reset
-            viewPos = viewPos_default;
-            matView = glm::lookAt(viewPos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+            // viewPos = viewPos_default;
+            // matView = glm::lookAt(viewPos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+
+            camera->reset(viewPos_default, glm::vec3(0, 0, 0));
             matModelRoot = glm::mat4(1.0f);
 
             return;
         } 
 
-        glm::mat4 nextMatView = matView;
-        glm::vec3 nextViewPos = viewPos;
+        glm::mat4 nextMatView = camera->matView;
+        glm::vec3 nextViewPos = camera->eye;
 
         // camera control
         if (mods & GLFW_MOD_CONTROL) {
             if (GLFW_KEY_LEFT == key) {
                 // pan left, rotate around Y, CCW
                 mat = glm::rotate(glm::radians(-angleStep), glm::vec3(0.0, 1.0, 0.0));
-                nextMatView = mat * matView;
+                nextMatView = mat * camera->matView;
             }
             else if (GLFW_KEY_RIGHT == key) {
                 // pan right, rotate around Y, CW
                 mat = glm::rotate(glm::radians(angleStep), glm::vec3(0.0, 1.0, 0.0));
-                nextMatView = mat * matView;
+                nextMatView = mat * camera->matView;
             }
             else if (GLFW_KEY_UP == key) {
                 // tilt up, rotate around X, CCW
                 mat = glm::rotate(glm::radians(-angleStep), glm::vec3(1.0, 0.0, 0.0));
-                nextMatView = mat * matView;
+                nextMatView = mat * camera->matView;
             }
             else if (GLFW_KEY_DOWN == key) {
                 // tilt down, rotate around X, CW
                 mat = glm::rotate(glm::radians(angleStep), glm::vec3(1.0, 0.0, 0.0));
-                nextMatView = mat * matView;
+                nextMatView = mat * camera->matView;
             }
             else if ((GLFW_KEY_KP_ADD == key) ||
                 (GLFW_KEY_EQUAL == key) && (mods & GLFW_MOD_SHIFT)) {
                 // zoom in, move along -Z
                 mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
-                nextMatView = mat * matView;
+                nextMatView = mat * camera->matView;
             }
             else if ((GLFW_KEY_KP_SUBTRACT == key) || (GLFW_KEY_MINUS == key)) {
                 // zoom out, move along -Z
                 mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep));
-                nextMatView = mat * matView;
+                nextMatView = mat * camera->matView;
             }
         }
 
@@ -332,19 +410,19 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
         if (GLFW_KEY_A == key) {
             //  move left along -X
             mat = glm::translate(glm::mat4(1.0f), glm::vec3(transStep, 0.0f, 0.0f));
-            nextMatView = mat * matView;
+            nextMatView = mat * camera->matView;
         } else if (GLFW_KEY_D == key) {
             // move right along X
             mat = glm::translate(glm::mat4(1.0f), glm::vec3(-transStep, 0.0f, 0.0f));
-            nextMatView = mat * matView;
+            nextMatView = mat * camera->matView;
         } else if (GLFW_KEY_W == key) {
             // move forward along -Z
             mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
-            nextMatView = mat * matView;
+            nextMatView = mat * camera->matView;
         } else if (GLFW_KEY_S == key) {
             // move backward along Z
             mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep)); 
-            nextMatView = mat * matView;
+            nextMatView = mat * camera->matView;
         }
 
 
@@ -352,33 +430,33 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
         if (GLFW_KEY_LEFT == key) {
             //  move left along -X
             mat = glm::translate(glm::mat4(1.0f), glm::vec3(transStep, 0.0f, 0.0f));
-            nextMatView = matView * mat;
+            nextMatView = camera->matView * mat;
             nextViewPos.x -= transStep;
         } else if (GLFW_KEY_RIGHT == key) {
             // move right along X
             mat = glm::translate(glm::mat4(1.0f), glm::vec3(-transStep, 0.0f, 0.0f));
-            nextMatView = matView * mat;
+            nextMatView = camera->matView * mat;
             nextViewPos.x += transStep;
         } else if (GLFW_KEY_UP == key) {
             // move up along Y
             mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -transStep, 0.0f));
-            nextMatView = matView * mat;
+            nextMatView = camera->matView * mat;
             nextViewPos.y += transStep;
         } else if (GLFW_KEY_DOWN == key) {
             // move down along -Y
             mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, transStep, 0.0f));
-            nextMatView = matView * mat;
+            nextMatView = camera->matView * mat;
             nextViewPos.y -= transStep;
         } else  if ((GLFW_KEY_KP_SUBTRACT == key) || (GLFW_KEY_MINUS == key))  {
             // move backward along +Z
             mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -transStep));
-            nextMatView = matView * mat;
+            nextMatView = camera->matView * mat;
             nextViewPos.z += transStep;
         } else if ((GLFW_KEY_KP_ADD == key) ||
             (GLFW_KEY_EQUAL == key) && (mods & GLFW_MOD_SHIFT))  {
             // move forward along -Z
             mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, transStep));
-            nextMatView = matView * mat;
+            nextMatView = camera->matView * mat;
             nextViewPos.z -= transStep;
         }
 
@@ -401,8 +479,9 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
         }
 
         if (!bCollide) {
-            matView = nextMatView;
-            viewPos = nextViewPos;
+            camera->matView = nextMatView;
+            // should use the camera class
+            camera->eye = nextViewPos;
         }
     }
 }
