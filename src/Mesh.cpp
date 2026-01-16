@@ -29,13 +29,14 @@ void Mesh::init(std::string path, GLuint id)
     initBuffer();
 }
 
-void Mesh::loadModel(std::string path) 
+void Mesh::loadModel(std::string path)
 {
     Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(path, aiProcess_JoinIdenticalVertices | aiProcess_FlipUVs | aiProcess_CalcTangentSpace /* | aiProcess_GenNormals */ );
+    const aiScene* scene = importer.ReadFile(path, aiProcess_JoinIdenticalVertices | aiProcess_FlipUVs | aiProcess_CalcTangentSpace /* | aiProcess_GenNormals */);
     if (NULL != scene) {
         std::cout << "load model successful" << std::endl;
-    } else {
+    }
+    else {
         std::cout << "load model failed" << std::endl;
     }
 
@@ -49,7 +50,7 @@ void Mesh::loadModel(std::string path)
     for (int i = 0; i < scene->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[i];
-        
+
         // read vertex position and normals
         int nVertex = mesh->mNumVertices;
         // std::cout << mesh->mNumVertices << std::endl;
@@ -57,10 +58,10 @@ void Mesh::loadModel(std::string path)
 
         for (int j = 0; j < nVertex; j++)
         {
-            glm::vec3 pos; 
+            glm::vec3 pos;
             pos.x = mesh->mVertices[j].x;
             pos.y = mesh->mVertices[j].y;
-            pos.z = mesh->mVertices[j].z; 
+            pos.z = mesh->mVertices[j].z;
             // vertices.push_back(pos);
             v.pos = pos;
 
@@ -74,26 +75,29 @@ void Mesh::loadModel(std::string path)
 
             v.normal = normal;
 
-            /*
-            // LabA08 tangent space for normal mapping
-            glm::vec3 tangent;
-            tangent.x = mesh->mTangents[i].x;
-            tangent.y = mesh->mTangents[i].y;
-            tangent.z = mesh->mTangents[i].z;
-            v.tangent = tangent;  
+            if (mesh->mTangents && mesh->mBitangents) {  // ADD THIS CHECK
+                glm::vec3 tangent;
+                tangent.x = mesh->mTangents[j].x;
+                tangent.y = mesh->mTangents[j].y;
+                tangent.z = mesh->mTangents[j].z;
+                v.tangent = tangent;
 
-            tangent.x = mesh->mBitangents[i].x;
-            tangent.y = mesh->mBitangents[i].y;
-            tangent.z = mesh->mBitangents[i].z;
-            v.bitangent = tangent; 
-            */
+                tangent.x = mesh->mBitangents[j].x;
+                tangent.y = mesh->mBitangents[j].y;
+                tangent.z = mesh->mBitangents[j].z;
+                v.bitangent = tangent;
+            }
+            else {  // ADD DEFAULT VALUES
+                v.tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+                v.bitangent = glm::vec3(0.0f, 1.0f, 0.0f);
+            }
 
 
             // LabA07 Texture Coordinates
-            if(mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
+            if (mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
             {
                 glm::vec2 vec;
-                vec.x = mesh->mTextureCoords[0][j].x; 
+                vec.x = mesh->mTextureCoords[0][j].x;
                 vec.y = mesh->mTextureCoords[0][j].y;
                 v.texCoord = vec;
             }
@@ -105,13 +109,13 @@ void Mesh::loadModel(std::string path)
         }
 
 
-		int nFaces = mesh->mNumFaces;
-        for (int j = 0; j < nFaces; j++ )
+        int nFaces = mesh->mNumFaces;
+        for (int j = 0; j < nFaces; j++)
         {
             const aiFace& face = mesh->mFaces[j];
             for (int k = 0; k < 3; k++)
             {
-                indices.push_back(face.mIndices[k]); 
+                indices.push_back(face.mIndices[k]);
             }
         }
     }
@@ -136,13 +140,11 @@ void Mesh::loadModel(std::string path)
             aiTextureType_DIFFUSE, "texture_diffuse", dir);
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 
-        /*
         std::vector<Texture> normalMaps = loadMaterialTextures(material,
             aiTextureType_HEIGHT, "texture_normal", dir);
         normals.insert(normals.end(), normalMaps.begin(), normalMaps.end());
 
         this->material = loadMaterial(material);
-        */
 
         // we don't deal with specular maps
         //std::vector<Texture> specularMaps = loadMaterialTextures(material, 
@@ -151,7 +153,7 @@ void Mesh::loadModel(std::string path)
     }
 
     // for debugging
-    std::cout << "numVertex: " <<  vertices.size() << std::endl;
+    std::cout << "numVertex: " << vertices.size() << std::endl;
     std::cout << "numIndex: " << indices.size() << std::endl;
 }
 
@@ -165,11 +167,11 @@ void Mesh::initBuffer()
     glBindBuffer(GL_ARRAY_BUFFER, vertBufID);
     GLuint idxBufID;
     glGenBuffers(1, &idxBufID);
-    
+
     // remember VAO
     glBindVertexArray(vao);
     buffers.push_back(vao);
-    
+
     std::cout << "vertBufId: " << vertBufID << std::endl;
 
     buffers.push_back(vertBufID);
@@ -183,7 +185,7 @@ void Mesh::initBuffer()
     // set normal attributes
     glEnableVertexAttribArray(1);
     //glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (void *) (sizeof(float) * 3));
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) (sizeof(float) * 3));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 3));
 
     // LabA07: Adding texture coord attribute
     // vertex texture coords
@@ -193,11 +195,11 @@ void Mesh::initBuffer()
 
 
     // tangent space
-    //glEnableVertexAttribArray(3);
-    //glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tangent));
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tangent));
 
-    //glEnableVertexAttribArray(4);
-    //glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, bitangent));
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, bitangent));
 
 
     // bind index buffer
@@ -217,12 +219,12 @@ void Mesh::setShaderId(GLuint sid) {
 }
 
 
-std::vector<Texture> Mesh::loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName, std::string dir)
+std::vector<Texture> Mesh::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName, std::string dir)
 {
     std::vector<Texture> textures;
 
     int nTex = mat->GetTextureCount(type);
-    for(unsigned int i = 0; i < nTex ; i++)
+    for (unsigned int i = 0; i < nTex; i++)
     {
         aiString str;
         mat->GetTexture(type, i, &str);
@@ -233,7 +235,7 @@ std::vector<Texture> Mesh::loadMaterialTextures(aiMaterial *mat, aiTextureType t
         textures.push_back(texture);
     }
     return textures;
-}  
+}
 
 unsigned int Mesh::loadTextureAndBind(const char* path, const std::string& directory)
 {
@@ -279,7 +281,7 @@ unsigned int Mesh::loadTextureAndBind(const char* path, const std::string& direc
 }
 
 
-Material Mesh::loadMaterial(aiMaterial* mat) 
+Material Mesh::loadMaterial(aiMaterial* mat)
 {
     Material material;
     aiColor3D color(0.f, 0.f, 0.f);
@@ -312,42 +314,57 @@ void Mesh::draw(glm::mat4 matModel, glm::mat4 matView, glm::mat4 matProj)
 
     // 2. Set the appropriate uniforms for each shader
     // set the modelling transform  
-    GLuint model_loc = glGetUniformLocation(shaderId, "model" );
+    GLuint model_loc = glGetUniformLocation(shaderId, "model");
     glUniformMatrix4fv(model_loc, 1, GL_FALSE, &matModel[0][0]);
 
     // set view matrix
-    GLuint view_loc = glGetUniformLocation(shaderId, "view" );
+    GLuint view_loc = glGetUniformLocation(shaderId, "view");
     glUniformMatrix4fv(view_loc, 1, GL_FALSE, &matView[0][0]);
 
     // set projection transforms
     glm::mat4 mat_projection = matProj;
-    GLuint projection_loc = glGetUniformLocation( shaderId, "projection" );
+    GLuint projection_loc = glGetUniformLocation(shaderId, "projection");
     glUniformMatrix4fv(projection_loc, 1, GL_FALSE, &mat_projection[0][0]);
 
     GLint textureLoc = glGetUniformLocation(shaderId, "textureMap");
-    glUniform1i(textureLoc, 0); 
-
-    GLint hasTextureLoc = glGetUniformLocation(shaderId, "hasTexture");
     glUniform1i(textureLoc, 0);
 
-    if (! textures.empty())
+    GLint hasTextureLoc = glGetUniformLocation(shaderId, "hasTexture");
+    glUniform1i(hasTextureLoc, 0);
+
+    if (!textures.empty())
     {
-        // Texture mapping, we only deal with one texture unit    
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textures[0].id);
-
         glUniform1i(hasTextureLoc, GL_TRUE);
     }
     else {
         glUniform1i(hasTextureLoc, GL_FALSE);
     }
 
+    if (!normals.empty())
+    {
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, normals[0].id);
+        GLuint hasNormalLoc = glGetUniformLocation(shaderId, "hasNormalMap");
+        glUniform1i(hasNormalLoc, GL_TRUE);
+
+        GLuint normalMapLoc = glGetUniformLocation(shaderId, "normalMap");
+        glUniform1i(normalMapLoc, 2);
+    }
+    else {
+        GLuint hasNormalLoc = glGetUniformLocation(shaderId, "hasNormalMap");
+        if (hasNormalLoc != -1) {
+            glUniform1i(hasNormalLoc, GL_FALSE);
+        }
+    }
+
 
     //if (bShadow)
     {
         GLint loc = glGetUniformLocation(shaderId, "depthMap");
-        glUniform1i(loc, 1); 
-       
+        glUniform1i(loc, 1);
+
     }
 
     // 3. Bind the corresponding model's VAO

@@ -30,6 +30,9 @@ public:
     void setShaderId(GLuint sid);
     void draw(glm::mat4 matModel, glm::mat4 matView, glm::mat4 matProj);
 
+    void setLocalTransform(glm::mat4 transform);
+    void applyOffset(glm::vec3 offset);
+
 };
 
 #endif
