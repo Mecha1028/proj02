@@ -5,9 +5,6 @@
 
 #include <stb/stb_image.h>
 
-#include <windows.h> 
-
-// Skybox vertices (simple cube, 36 vertices)
 float skyboxVertices[] = {
     // positions          
     -1.0f,  1.0f, -1.0f,
@@ -62,17 +59,6 @@ Skybox::~Skybox() {
 }
 
 void Skybox::init(GLuint shaderProgram) {
-    // Debug: Print current directory
-    char buffer[MAX_PATH];
-    GetCurrentDirectoryA(MAX_PATH, buffer);
-    std::cout << "=== SKYBOX DEBUG ===" << std::endl;
-    std::cout << "Current working directory: " << buffer << std::endl;
-
-    // Also get the executable path
-    char exePath[MAX_PATH];
-    GetModuleFileNameA(NULL, exePath, MAX_PATH);
-    std::cout << "Executable path: " << exePath << std::endl;
-
     shaderId = shaderProgram;
 
     glGenVertexArrays(1, &VAO);
@@ -84,22 +70,18 @@ void Skybox::init(GLuint shaderProgram) {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glBindVertexArray(0);
 
-    // Try these paths one by one
-    std::vector<std::string> faces;
-
-    // OPTION 1: If executable is in project root
-    faces = {
-        "textures/skybox/posx.jpg",
-        "textures/skybox/negx.jpg",
-        "textures/skybox/posy.jpg",
-        "textures/skybox/negy.jpg",
-        "textures/skybox/posz.jpg",
-        "textures/skybox/negz.jpg"
+    // Load cubemap textures
+    std::vector<std::string> faces = {
+        "textures/skybox/posx.jpg",  // Right
+        "textures/skybox/negx.jpg",  // Left
+        "textures/skybox/posy.jpg",  // Top
+        "textures/skybox/negy.jpg",  // Bottom
+        "textures/skybox/posz.jpg",  // Front
+        "textures/skybox/negz.jpg"   // Back
     };
 
     cubemapTexture = loadCubemap(faces);
 }
-
 GLuint Skybox::loadCubemap(std::vector<std::string> faces) {
     GLuint textureID;
     glGenTextures(1, &textureID);
@@ -107,19 +89,13 @@ GLuint Skybox::loadCubemap(std::vector<std::string> faces) {
 
     int width, height, nrChannels;
 
-    std::cout << "=== Loading cubemap textures ===" << std::endl;
-
-    // Use the correct base path
-    std::string basePath = "E:/temp/proj02/";  // Your project root
+    std::string basePath = "../../../";
 
     for (unsigned int i = 0; i < faces.size(); i++) {
-        // Prepend the base path
         std::string fullPath = basePath + faces[i];
-        std::cout << "Loading: " << fullPath << std::endl;
 
         unsigned char* data = stbi_load(fullPath.c_str(), &width, &height, &nrChannels, 0);
         if (data) {
-            std::cout << "SUCCESS!" << std::endl;
             GLenum format = GL_RGB;
             if (nrChannels == 3)
                 format = GL_RGB;
@@ -131,9 +107,8 @@ GLuint Skybox::loadCubemap(std::vector<std::string> faces) {
             stbi_image_free(data);
         }
         else {
-            std::cout << "FAILED!" << std::endl;
+            std::cout << "Failed to load skybox texture: " << fullPath << std::endl;
         }
-        std::cout << "---" << std::endl;
     }
 
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

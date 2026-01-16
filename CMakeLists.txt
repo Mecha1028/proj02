@@ -15,7 +15,7 @@ find_package(glfw3 REQUIRED)
 # Note: it is not a good practice to put glad.c in the src folder
 # Ideally, it should be put under external/ and used as an external library
 # to avoid unnecessary compiling
-add_executable(run01 src/main.cpp src/glad.c src/shader.cpp src/Mesh.cpp src/Node.cpp "src/Skybox.cpp" "src/Selection.h" "src/Selection.cpp")
+add_executable(run01 src/main.cpp src/glad.c src/shader.cpp src/Mesh.cpp src/Node.cpp "src/Skybox.cpp" "src/Selection.h" "src/Selection.cpp" "src/UI.h" "src/UI.cpp")
 
 # specify include directories
 target_include_directories(run01 PRIVATE 

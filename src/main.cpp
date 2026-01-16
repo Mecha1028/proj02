@@ -13,6 +13,7 @@
 #include "Node.h"
 #include "Skybox.h"
 #include "Selection.h"
+#include "UI.h"
 
 static Shader shader;
 
@@ -56,6 +57,7 @@ float lastY = height / 2.0f;
 float mouseSensitivity = 0.1f;
 
 Selection selectionSystem;
+UI ui;
 
 GLuint depthTex;  // depth texture ID
 GLuint shadowFBO; // shadow frame buffer ID
@@ -320,13 +322,35 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             matView = mat * matView;
         }
         else if (GLFW_KEY_R == key) {
-            //std::cout << "R pressed" << std::endl;
-            // reset
-            matView = glm::lookAt(glm::vec3(0, 0, 5), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-            matModelRoot = glm::mat4(1.0f);
+            // Reset camera to initial position
+            cameraPos = glm::vec3(0.0f, 2.0f, 5.0f);  // Initial position from main()
+            cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);  // Initial front
+            cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);  // Up
+            yaw = -90.0f;  // Initial yaw
+            pitch = 0.0f;   // Initial pitch
+
+            // Reset view matrix
+            matView = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+
+            // Reset model root (optional - keeps model transformations)
+            // matModelRoot = glm::mat4(1.0f);
         }
     }
 }
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    // yoffset is the vertical scroll amount
+    // Positive = scroll up/forward (zoom in)
+    // Negative = scroll down/backward (zoom out)
+
+    float zoomSpeed = 0.5f;
+    cameraPos += cameraFront * (float)yoffset * zoomSpeed;
+
+    // Update view matrix
+    matView = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+}
+
 
 int main()
 {
@@ -350,6 +374,8 @@ int main()
 
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    glfwSetScrollCallback(window, scroll_callback);
 
     // loading glad
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -389,6 +415,9 @@ int main()
     setViewPosition(cameraPos);
 
     skyboxShader = initShader("shaders/skybox.vert", "shaders/skybox.frag");
+
+    GLuint uiShader = initShader("shaders/ui.vert", "shaders/ui.frag");
+    ui.init(uiShader, width, height);
 
     // set the eye position, looking at the centre of the world
     viewPos = glm::vec3(0.0f, 2.0f, 5.0f);
@@ -513,6 +542,8 @@ int main()
             //scene->setShaderId(shadowShader);
             scene->draw(matModelRoot, matView, matProj);
         }
+        ui.render();
+
         glfwSwapBuffers(window);
     }
 
